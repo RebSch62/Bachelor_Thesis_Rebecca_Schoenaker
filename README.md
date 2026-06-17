@@ -1,4 +1,4 @@
-# Classifying tremor from voluntary rhythmic movements
+# Distinguishing tremor from voluntary rhythmic movements
 
 This repository contains the code to investigate the signal difference between tremor and voluntary rhythmic movement (VRM) windows, as discussed in the bachelor thesis "Reducing tremor detection false positives: distinguishing Parkinsonian rest tremor from voluntary rhythmic movements using deep learning".
 
