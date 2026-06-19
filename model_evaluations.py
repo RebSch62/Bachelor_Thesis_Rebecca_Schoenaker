@@ -154,7 +154,7 @@ def plot_temporal_filter_zeroing(importance):
     fig, ax = plt.subplots(figsize=(8, 4), layout='constrained')
     sns.barplot(x=list(importance.keys()), y=list(importance.values()), color=C1, ax=ax)
     ax.axhline(0, color='black', linewidth=0.8)
-    ax.set_xlabel('Filter')
+    ax.set_xlabel('Temporal filter (TF)')
     ax.set_ylabel('AUC drop when temporal filter zeroed')
     plt.savefig('figures/filter_importance.pdf', dpi=150)
     plt.show()
@@ -202,7 +202,7 @@ def temporal_filter_activation_difference(model, mean_t, mean_v, X_test_all, t_i
     sns.barplot(x=np.concatenate([x, x]), y=np.concatenate([mean_t, mean_v]),
                 hue=['Tremor']*8 + ['Voluntary rhythmic movement']*8, palette=[C5, C6])
     plt.xticks(x, labels = labels)
-    plt.xlabel('Filter')
+    plt.xlabel('Temporal filter (TF)')
     plt.ylabel('Mean activation magnitude')
     plt.legend(loc= "lower right")
     plt.savefig('figures/temporal_activation_difference.pdf', dpi=150)
@@ -258,7 +258,7 @@ def lift_plot(lift_ratio_t, lift_ratio_v):
                 hue=['Tremor']*8 + ['Voluntary']*8, palette=[C5, C6])
     plt.axhline(1.0, color='k', linewidth=1, linestyle='--', label='Baseline (uniform)')
     plt.xticks(x, labels= labels)
-    plt.xlabel('Filter')
+    plt.xlabel('Temporal filter (TF)')
     plt.ylabel('LIFT ratio')
     plt.legend(loc = 'lower right')
 
@@ -266,53 +266,53 @@ def lift_plot(lift_ratio_t, lift_ratio_v):
     plt.show()
 
 
-
-
 def plot_temporal_filters(model):
     """
     Plots the temporal filters of EEGNet and their corresponding spectral equivalent.
-
     """
-    # Derive the EEGNet filters
     temporal_filters = model.get_submodule('conv_temporal').weight.squeeze(2).squeeze(1).cpu().detach().numpy()
     
-    # Filter information
     f1, kernel_length = temporal_filters.shape
-    fig = plt.figure(constrained_layout=True, figsize=(25,8))
-
-
-    fig_temp, fig_freq_res = fig.subfigures(2, 1, wspace=0.07)
-    
-    # Plot temporal filters:
-    axes = fig_temp.subplots(1, f1, squeeze=False,sharey=True)
     t = np.arange(kernel_length)/FS
-    for i, (ax, f) in enumerate(zip(axes[0], temporal_filters)):
-        ax.plot(t, f, color=C2)
-        ax.set_xlabel('Time [s]')
-        ax.set_title(f'Temp. filter {i+1}')
-        if i==0:
-            ax.set_ylabel('Filter weight')
-        
-    # Plot the frequency response of the temporal filters
-    axes = fig_freq_res.subplots(1, f1, squeeze=False, sharey=True)
-    for i, (ax, f) in enumerate(zip(axes[0], temporal_filters)):
-        f_norm = f / f.sum()
-        freq_res = np.abs(np.fft.fft(f_norm))[0:f.shape[0]//2 + 1]
-        freqs = np.linspace(0, FS // 2, freq_res.shape[0])
-        
-        ax.plot(freqs, freq_res, color=C2)
-        ax.set_xlabel('Frequency [Hz]')
-        ax.set_title(f'Freq. response')
-        ax.axvspan(3, 7, alpha=0.1, color=C5, label='Tremor band')
-        ax.axvline(3, color=C5)
-        ax.axvline(7, color=C5)
-        
-        if i == 0:
-            ax.set_ylabel('Magnitude response')
+    half = f1 // 2
 
-    plt.savefig('figures/EEGNet_filter_explanations_temp_spect.pdf')
+    fig = plt.figure(constrained_layout=True, figsize=(12, 12))
+    fig_top, fig_bot = fig.subfigures(2, 1, hspace=0.08)
+
+    for group, subfig in enumerate([fig_top, fig_bot]):
+        
+        axes = subfig.subplots(2, half, squeeze=False, sharey='row')
+        for col in range(half):
+            i = group * half + col
+            if i >= f1:
+                axes[0, col].set_visible(False)
+                axes[1, col].set_visible(False)
+                continue
+            f = temporal_filters[i]
+
+            # Top: temporal filter
+            axes[0, col].plot(t, f, color=C2)
+            axes[0, col].set_xlabel('Time [s]')
+            axes[0, col].set_title(f'Temp. filter {i+1}')
+            if col == 0:
+                axes[0, col].set_ylabel('Filter weight')
+
+            # Frequency response
+            f_norm = f / f.sum()
+            freq_res = np.abs(np.fft.fft(f_norm))[:f.shape[0]//2 + 1]
+            freqs = np.linspace(0, FS // 2, freq_res.shape[0])
+
+            axes[1, col].plot(freqs, freq_res, color=C2)
+            axes[1, col].set_xlabel('Frequency [Hz]')
+            axes[1, col].set_title('Freq. response')
+            axes[1, col].axvspan(3, 7, alpha=0.1, color=C5, label='Tremor band')
+            axes[1, col].axvline(3, color=C5)
+            axes[1, col].axvline(7, color=C5)
+            if col == 0:
+                axes[1, col].set_ylabel('Magnitude response')
+
+    plt.savefig('EEGNet_filter_explanations_temp_spect', dpi=150)
     plt.show()
-
 
 
 def plot_spatial_filters(model):
