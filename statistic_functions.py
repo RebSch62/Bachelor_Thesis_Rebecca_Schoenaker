@@ -36,7 +36,7 @@ def run_stats(t_sample, v_sample, title=""):
     effect_size, ci_low, ci_high = effect_size_and_CI(t_sample, v_sample)
     print(f"\n      {title}Mann-Whitney U: stat={stat:.3f}, p={p_val:.4f}")
     print(f"        Effect size = {effect_size:.3f} [95% CI: {ci_low:.3f}, {ci_high:.3f}]")
-    print(f"        Difference between tremor ({np.mean(t_sample)}) and VRM ({np.mean(v_sample)}) power values: {np.mean(t_sample)-np.mean(v_sample)}.")
+    print(f"        Difference between tremor ({np.mean(t_sample)}) and VRM ({np.mean(v_sample)}): {np.mean(t_sample)-np.mean(v_sample)}.")
 
     
 
