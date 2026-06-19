@@ -304,6 +304,19 @@ if __name__ == '__main__':
         run_stats(pt_sample, pv_sample, "Predicted tremor versus predicted VRM oscillation duration:")        
         oscillation_duration_boxplots(t_sample, v_sample, pt_sample, pv_sample)
 
+        # Do the same for confusion matrix categories
+        envelopes_tp, envelopes_tn, envelopes_fp, envelopes_fn = envelope_calculations(X_test_all, tp_idx, tn_idx, fp_idx, fn_idx, b, a)
+        
+        tp_durations, tn_durations, fp_durations ,fn_durations = duration_calculations(global_threshold, envelopes_tp, envelopes_tn, envelopes_fp, envelopes_fn)
+        tp_sample, tn_sample, fp_sample, fn_sample = category_samples(tp_durations, tn_durations, fp_durations ,fn_durations)
+        
+        run_stats(tp_sample, fp_sample, "Correctly versus incorrectly tremor oscillation durations:") 
+        run_stats(tn_sample, fn_sample, "Correctly versus incorrectly VRM oscillation durations:")    
+        
+        oscillation_duration_boxplots_classes(tp_sample, fp_sample, tn_sample, fn_sample)
+
+
+
 
     
     # ---- PSD ----
