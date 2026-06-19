@@ -17,7 +17,7 @@ def envelope_calculations(X_test_all, t_idx, v_idx, pt_idx, pv_idx, b, a):
 
         # Calculate the envelope for each window
         for window in X_test_all[category]:
-            signal   = window[0, :]                    
+            signal   = window.mean(axis=0)                  
             filtered = filtfilt(b, a, signal)
             envelope = np.abs(hilbert(filtered))
             envelopes.append(envelope)
@@ -58,15 +58,15 @@ def duration_calculations(global_threshold, envelopes_t, envelopes_v, envelopes_
     return tuple(all_durations)
 
 
-def category_samples(t_durations, v_durations, pred_t_durations ,pred_v_durations):
+def category_samples(c1, c2, c3 ,c4):
     """
     Selects samples (n=1000) for visualisation and statistics calculation. 
     """
     samples_categories = []
 
     # Sample for each category
-    for category in [t_durations, v_durations, pred_t_durations ,pred_v_durations]:
-        sample = np.random.choice(category,  min(1000, len(t_durations)),  replace=False)
+    for category in [c1, c2, c3 ,c4]:
+        sample = np.random.choice(category,  min(1000, len(c1)),  replace=False)
         samples_categories.append(sample)
     
     return tuple(samples_categories)
@@ -105,7 +105,61 @@ def oscillation_duration_boxplots(t_durations, v_durations, pred_t_durations, pr
     axes[1].set_xticklabels(['Predicted tremor', 'Predicted VRM'])
     axes[1].set_title('Predicted class')
 
+    
+    # recolouring
+    for parts in [parts1, parts2]:
+        parts['cmedians'].set_color('green')
+        
+
+    # Add a legend
+    axes[0].plot([], [], color='green', label='Median')
+    axes[0].legend(loc="upper right")
+    axes[1].plot([], [], color='green', label='Median')
+    axes[1].legend(loc="upper right")
+
+
     plt.savefig('figures/oscillation_duration_boxplots.pdf')
+    plt.show()
+
+
+
+def oscillation_duration_boxplots_classes(tp_durations, tn_durations, fp_durations ,fn_durations ):
+    """
+    Visualises the difference in frequency band oscillation duration between (predicted) tremor and VRM windows. 
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5), layout='constrained', sharey=True)
+
+    print(np.shape(tp_durations), np.shape(fp_durations), np.shape(tn_durations), np.shape(fp_durations))
+
+    # True class 
+    parts1 = axes[0].violinplot([tp_durations, fp_durations], positions=[1, 2], showmedians=True, showextrema=False)
+    parts1['bodies'][0].set_facecolor(C5)
+    parts1['bodies'][1].set_facecolor(C6)
+    axes[0].set_xticks([1, 2])
+    axes[0].set_xticklabels(['True positives', 'False positives'])
+    axes[0].set_ylabel('Oscillation duration (s)')
+    axes[0].set_title('Predicted tremor')
+
+    # Predicted class
+    parts2 = axes[1].violinplot([tn_durations, fn_durations], positions=[1, 2], showmedians=True, showextrema=False)
+    parts2['bodies'][0].set_facecolor(C5)
+    parts2['bodies'][1].set_facecolor(C6)
+    axes[1].set_xticks([1, 2])
+    axes[1].set_xticklabels(['True negatives', 'False negatives'])
+    axes[1].set_title('Predicted voluntary rhythmic movements (VRM)')
+
+    # recolouring
+    for parts in [parts1, parts2]:
+        parts['cmedians'].set_color('green')
+        
+
+    # Add a legend
+    axes[0].plot([], [], color='green', label='Median')
+    axes[0].legend(loc="upper right")
+    axes[1].plot([], [], color='green', label='Median')
+    axes[1].legend(loc="upper right")
+
+    plt.savefig('figures/oscillation_duration_boxplots_classes.pdf')
     plt.show()
 
 
@@ -178,9 +232,9 @@ def psds_tremor_vs_voluntary_plot(f_axis, mean_t, mean_v, low, high):
                     color=C1, alpha=0.2, interpolate=True, label='Tremor > VRM')
     ax.fill_between(f_axis, mean_t, mean_v, where=(mean_t < mean_v),
                     color=C2, alpha=0.2, interpolate=True, label='VRM > Tremor')
-    ax.axvspan(low, high, alpha=0.1, color=C3, label=f'Investigated frequency band {low}-{high} Hz.')
-    ax.axvline(low, color=C3)
-    ax.axvline(high, color=C3)
+    ax.axvspan(low, high, alpha=0.07, color=C3, label=f'Investigated frequency band {low}-{high} Hz.')
+    ax.axvline(low, color=C3, linewidth=0.8)
+    ax.axvline(high, color=C3, linewidth=0.8)
     ax.set_xlim(0, 25)
     ax.set_xlabel('Frequency (Hz)')
     ax.set_ylabel('Power spectral density [V**2/Hz]')
@@ -207,8 +261,8 @@ def psd_comparison(t_idx, v_idx, tp_idx, fp_idx, tn_idx, fn_idx, X_test_all, low
         (fn_idx, X_test_all, '--', 'Missed tremor (FN)',   C5, 1),
         (fp_idx, X_test_all,  '--', 'Missed VRM (FP)',     C6, 1),
         (tn_idx, X_test_all,  '-', 'Correct VRM (TN)', C2, 1),
-        (t_idx, X_test_all, '-', 'Voluntary rhytmic movement (VRM)', 'black', 0.5 ),
-        (v_idx, X_test_all, '--', 'Tremor', 'black', 0.5)
+        (t_idx, X_test_all, ':', 'Voluntary rhytmic movement (VRM)', 'black', 0.5 ),
+        (v_idx, X_test_all, ':', 'Tremor', 'black', 0.5)
     ]:
         
         # Calculate psds for every class
@@ -216,7 +270,9 @@ def psd_comparison(t_idx, v_idx, tp_idx, fp_idx, tn_idx, fn_idx, X_test_all, low
         all_band_powers[label] = np.array(band_powers)
         mean_psd = np.mean(psds, axis=0)
         ax.plot(f_axis, mean_psd, color=color, label=label, linestyle = ls, alpha=alpha)
-    
+
+    ax.axvline(low, color=C3, linewidth=0.8)
+    ax.axvline(high, color=C3, linewidth=0.8)
     ax.axvspan(3, 7, alpha=0.05, color=C3, label='Tremor band')
     ax.set_xlabel('Frequency (Hz)')
     ax.set_ylabel('Power spectral density')
